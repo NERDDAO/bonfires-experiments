@@ -14,11 +14,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-ENV_CANDIDATES = [
-    Path(__file__).parent.parent / ".env",
-    Path(__file__).resolve().parents[4] / ".env",
-]
-for _env_path in ENV_CANDIDATES:
+_resolved = Path(__file__).resolve()
+_env_candidates = [_resolved.parent.parent / ".env"]
+if len(_resolved.parents) > 4:
+    _env_candidates.append(_resolved.parents[4] / ".env")
+for _env_path in _env_candidates:
     if _env_path.exists():
         load_dotenv(_env_path)
         break
