@@ -1,4 +1,5 @@
 fastapi
-pymongo[srv]
+pymongo
+dnspython
 python-dotenv
 uvicorn

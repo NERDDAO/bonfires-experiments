@@ -23,11 +23,7 @@ for _env_path in ENV_CANDIDATES:
         load_dotenv(_env_path)
         break
 
-MONGO_URI = os.environ["MONGO_URI"]
 DB_NAME = "bonfires_dan"
-
-client = pymongo.MongoClient(MONGO_URI)
-db = client[DB_NAME]
 
 app = FastAPI(title="Eval Dashboard")
 
@@ -37,6 +33,15 @@ app.add_middleware(
     allow_methods=["GET"],
     allow_headers=["*"],
 )
+
+_client: pymongo.MongoClient[dict[str, Any]] | None = None
+
+
+def _get_db() -> pymongo.database.Database[dict[str, Any]]:
+    global _client
+    if _client is None:
+        _client = pymongo.MongoClient(os.environ["MONGO_URI"])
+    return _client[DB_NAME]
 
 
 def _serialize(doc: dict[str, Any]) -> dict[str, Any]:
@@ -51,6 +56,7 @@ def _serialize(doc: dict[str, Any]) -> dict[str, Any]:
 @app.get("/api/reviews")
 def get_reviews() -> JSONResponse:
     """Return deduplicated reviews — latest per repoUrl."""
+    db = _get_db()
     docs = list(db["reviewtrackers"].find().sort("updatedAt", pymongo.DESCENDING))
 
     latest_by_repo: dict[str, dict[str, Any]] = {}
@@ -65,6 +71,7 @@ def get_reviews() -> JSONResponse:
 @app.get("/api/rubrics")
 def get_rubrics() -> JSONResponse:
     """Return all active agentdocuments (judging rubrics)."""
+    db = _get_db()
     docs = list(
         db["agentdocuments"].find({"metadata.isActive": True}).sort("updatedAt", pymongo.DESCENDING)
     )
